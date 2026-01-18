@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>WallNest</title>
+  <style>
+    :root{
+      --bg:#0b0f17; --surface:#111a2a; --text:#eaf0ff; --muted:#aeb9d2;
+      --line:rgba(255,255,255,.10); --chip:rgba(255,255,255,.06);
+      --shadow:0 10px 30px rgba(0,0,0,.25); --radius:18px;
+      --accent1:#7aa2ff; --accent2:#ff7ac6;
+    }
+    [data-theme="light"]{
+      --bg:#f6f7fb; --surface:#ffffff; --text:#0b1220; --muted:#4b5569;
+      --line:rgba(0,0,0,.10); --chip:rgba(0,0,0,.05);
+      --shadow:0 12px 26px rgba(0,0,0,.10);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
+    a{color:inherit;text-decoration:none}
+    .wrap{max-width:1300px;margin:0 auto;padding:14px 16px 60px}
+
+    /* Top bar */
+    .topbar{
+      position:sticky; top:10px; z-index:50;
+      display:flex; align-items:center; gap:10px;
+      border:1px solid var(--line);
+      background:color-mix(in oklab, var(--surface) 78%, transparent);
+      backdrop-filter: blur(10px);
+      border-radius:999px; padding:10px 12px;
+      box-shadow:var(--shadow);
+    }
+    .logo{
+      width:34px;height:34px;border-radius:10px;
+      background:linear-gradient(135deg,var(--accent1),var(--accent2));
+    }
+    .brand{display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:999px}
+    .brand b{letter-spacing:.2px}
+    .search{
+      flex:1; display:flex; align-items:center; gap:10px;
+      border:1px solid var(--line); background:var(--chip);
+      padding:10px 12px; border-radius:999px; min-width:140px;
+    }
+    .search input{width:100%;border:0;outline:0;background:transparent;color:var(--text);font-size:14px}
+    .btn{
+      border:1px solid var(--line); background:var(--chip); color:var(--text);
+      padding:10px 12px; border-radius:999px; cursor:pointer;
+      display:inline-flex; align-items:center; gap:8px;
+      font-weight:700; font-size:13px;
+    }
+
+    /* Layout */
+    .layout{display:grid; grid-template-columns: 260px 1fr; gap:14px; margin-top:12px}
+    @media (max-width: 980px){ .layout{grid-template-columns:1fr} }
+
+    /* Category panel */
+    .catbox{
+      border:1px solid var(--line);
+      background:var(--surface);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      position:sticky; top:82px;
+      height: calc(100vh - 110px);
+    }
+    @media (max-width: 980px){
+      .catbox{position:relative; top:auto; height:auto}
+    }
+    .cathead{
+      padding:12px 12px;
+      border-bottom:1px solid var(--line);
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px;
+    }
+    .cathead b{font-size:14px}
+    .catlist{padding:6px}
+    .catitem{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px;
+      padding:10px 10px;
+      border-radius:12px;
+      cursor:pointer;
+      color:var(--muted);
+    }
+    .catitem:hover{background:var(--chip); color:var(--text)}
+    .catitem.active{background:color-mix(in oklab, var(--chip) 75%, transparent); color:var(--text)}
+    .catitem span{font-weight:700; font-size:13px}
+    .catitem small{opacity:.7}
+
+    /* Mega menu panel (Trendyol style) */
+    .mega{
+      position:absolute;
+      left:260px; top:0;
+      width:min(860px, calc(100vw - 310px));
+      height:100%;
+      background:var(--surface);
+      border-left:1px solid var(--line);
+      display:none;
+      padding:14px 14px 14px 14px;
+      overflow:auto;
+    }
+    .catbox:hover .mega.show{display:block}
+    @media (max-width: 980px){
+      .mega{position:relative; left:auto; width:auto; border-left:0; border-top:1px solid var(--line); display:none}
+      .mega.show{display:block}
+      .catbox:hover .mega.show{display:block}
+    }
+
+    .mega h3{margin:0 0 10px; font-size:14px}
+    .megagrid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap:12px;
+    }
+    @media (max-width: 1200px){ .megagrid{grid-template-columns:repeat(2, minmax(0,1fr))} }
+    @media (max-width: 520px){ .megagrid{grid-template-columns:1fr} }
+
+    .megacol{
+      border:1px solid var(--line);
+      background:color-mix(in oklab, var(--chip) 70%, transparent);
+      border-radius:14px;
+      padding:10px;
+    }
+    .megocol b{display:block; font-size:13px; margin-bottom:6px}
+    .megalinks{display:flex; flex-direction:column; gap:6px}
+    .megalinks a{
+      font-size:12px; color:var(--muted);
+      padding:7px 8px; border-radius:10px;
+    }
+    .megalinks a:hover{background:var(--chip); color:var(--text)}
+    .chiprow{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 10px}
+    .chip{
+      border:1px solid var(--line);
+      background:var(--chip);
+      color:var(--muted);
+      padding:8px 10px;
+      border-radius:999px;
+      font-size:12px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .chip.active{color:var(--text); border-color:color-mix(in oklab, var(--accent1) 40%, var(--line))}
+
+    /* Masonry grid */
+    .gridwrap{
+      border:1px solid var(--line);
+      background:color-mix(in oklab, var(--surface) 60%, transparent);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:12px;
+      overflow:hidden;
+    }
+    .masonry{column-count:5; column-gap:14px}
+    @media (max-width: 1200px){ .masonry{column-count:4} }
+    @media (max-width: 900px){ .masonry{column-count:3} }
+    @media (max-width: 650px){ .masonry{column-count:2} }
+
+    .card{
+      break-inside:avoid;
+      margin:0 0 14px;
+      border:1px solid var(--line);
+      background:var(--surface);
+      border-radius:var(--radius);
+      overflow:hidden;
+      box-shadow:var(--shadow);
+    }
+    .thumb{
+      position:relative;
+      width:100%;
+      display:block;
+      background:linear-gradient(135deg, rgba(122,162,255,.25), rgba(255,122,198,.18));
+    }
+    .thumb img{width:100%;height:auto;display:block}
+    .badge{
+      position:absolute; left:10px; top:10px;
+      font-size:12px; font-weight:800;
+      padding:6px 9px; border-radius:999px;
+      background:rgba(0,0,0,.40); color:#fff;
+      border:1px solid rgba(255,255,255,.22);
+      backdrop-filter: blur(8px);
+    }
+    [data-theme="light"] .badge{background:rgba(0,0,0,.55)}
+    .meta{padding:10px 12px 12px; display:flex; flex-direction:column; gap:6px}
+    .title{font-weight:800; font-size:13px; line-height:1.2}
+    .sub{color:var(--muted); font-size:12px; display:flex; gap:10px; flex-wrap:wrap}
+
+    /* Ad card styled like normal tile */
+    .ad{border-style:dashed}
+    .ad .thumb{
+      display:flex; align-items:center; justify-content:center;
+      padding:18px; text-align:center; color:var(--muted);
+      background:linear-gradient(135deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+    }
+    [data-theme="light"] .ad .thumb{background:linear-gradient(135deg, rgba(0,0,0,.04), rgba(0,0,0,.02))}
+    .footer{margin-top:14px;color:var(--muted);font-size:12px;text-align:center}
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <a class="brand" href="#">
+        <div class="logo"></div>
+        <b>WallNest</b>
+      </a>
+
+      <div class="search" role="search">
+        🔎 <input id="q" placeholder="Ara: amoled, anime, nature, cars..." />
+      </div>
+
+      <button class="btn" id="themeBtn" type="button" aria-label="Tema değiştir">
+        🌙 <span id="themeLabel">Dark</span>
+      </button>
+    </div>
+
+    <div class="layout">
+      <!-- LEFT: Categories (Trendyol-like) -->
+      <div class="catbox" id="catbox">
+        <div class="cathead">
+          <b>📚 Kategoriler</b>
+          <span style="color:var(--muted);font-size:12px">Üstüne gel → pencere aç</span>
+        </div>
+
+        <div class="catlist" id="catlist"></div>
+
+        <div class="mega" id="mega">
+          <h3 id="megaTitle">Kategori</h3>
+          <div class="megagrid" id="megagrid"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Content -->
+      <div>
+        <div class="chiprow" id="chips"></div>
+
+        <div class="gridwrap">
+          <div class="masonry" id="grid"></div>
+          <div class="footer">Privacy • Terms • DMCA (sonra doldurursun)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ---------------- Theme toggle (saved) ----------------
+    const root = document.documentElement;
+    const themeBtn = document.getElementById("themeBtn");
+    const themeLabel = document.getElementById("themeLabel");
+
+    function setTheme(t){
+      if(t === "light"){
+        root.setAttribute("data-theme","light");
+        themeBtn.firstChild.textContent = "☀️ ";
+        themeLabel.textContent = "Light";
+      }else{
+        root.removeAttribute("data-theme");
+        themeBtn.firstChild.textContent = "🌙 ";
+        themeLabel.textContent = "Dark";
+      }
+      localStorage.setItem("theme", t);
+    }
+    setTheme(localStorage.getItem("theme") || "dark");
+    themeBtn.addEventListener("click", () => {
+      const current = root.getAttribute("data-theme") === "light" ? "light" : "dark";
+      setTheme(current === "light" ? "dark" : "light");
+    });
+
+    // ---------------- Categories (mega-menu data) ----------------
+    // "Aklıma gelen bütün kategoriler" = ana kategori + alt başlıklar (subcategories)
+    const CATEGORIES = [
+      { name:"Aesthetic", icon:"✨", cols:[
+        { title:"Aesthetic Styles", links:["soft aesthetic","vintage aesthetic","retro aesthetic","y2k aesthetic","grunge aesthetic","clean aesthetic"] },
+        { title:"Mood", links:["calm","dreamy","cozy","moody","sadcore","bright"] },
+        { title:"Color Vibes", links:["pink vibe","blue vibe","black vibe","pastel","neon","earth tones"] }
+      ]},
+      { name:"AMOLED / Black", icon:"🖤", cols:[
+        { title:"True Black", links:["amoled minimal","black gradients","dark patterns","black space","dark abstract","black neon"] },
+        { title:"Neon", links:["neon city","neon lines","cyber neon","purple neon","blue neon","pink neon"] },
+        { title:"Minimal Dark", links:["dark minimal","simple shapes","mono lines","dot grid","typography black","icons"] }
+      ]},
+      { name:"Nature", icon:"🌿", cols:[
+        { title:"Landscapes", links:["mountains","forest","lake","ocean","desert","waterfall"] },
+        { title:"Sky", links:["sunset","night sky","clouds","aurora","storm","sunrise"] },
+        { title:"Macro", links:["flowers","leaves","raindrops","rocks","snow","sand"] }
+      ]},
+      { name:"Space", icon:"🪐", cols:[
+        { title:"Cosmos", links:["galaxy","nebula","stars","milky way","deep space","planets"] },
+        { title:"Sci-Fi", links:["spaceship","astronaut","space station","wormhole","cyber space","future"] },
+        { title:"AMOLED Space", links:["black galaxy","neon stars","dark nebula","space minimal","planet silhouette","moon"] }
+      ]},
+      { name:"City / Architecture", icon:"🏙️", cols:[
+        { title:"City", links:["skylines","street","night city","rainy city","downtown","bridges"] },
+        { title:"Architecture", links:["modern","brutalism","classic","interior","minimal house","stairs"] },
+        { title:"Cyberpunk", links:["neon city","holograms","future street","tech noir","japan street","blade vibe"] }
+      ]},
+      { name:"Abstract", icon:"🌀", cols:[
+        { title:"Abstract Types", links:["fluid","geometric","noise","waves","shapes","patterns"] },
+        { title:"Gradients", links:["soft gradient","sunset gradient","dark gradient","mesh gradient","holographic","pastel gradient"] },
+        { title:"3D", links:["3d shapes","glass","metal","clay","chrome","low poly"] }
+      ]},
+      { name:"Minimal", icon:"◻️", cols:[
+        { title:"Minimal", links:["lines","shapes","mono","negative space","simple icons","grid"] },
+        { title:"Typography", links:["quotes","single word","motivation","minimal text","numbers","dates"] },
+        { title:"Aesthetic Minimal", links:["pastel minimal","calm minimal","soft minimal","dark minimal","beige minimal","white space"] }
+      ]},
+      { name:"Anime", icon:"🎴", cols:[
+        { title:"Anime Genres", links:["shonen","slice of life","cyber anime","samurai","fantasy","romance"] },
+        { title:"Styles", links:["manga","chibi","anime portrait","anime landscape","anime neon","anime minimal"] },
+        { title:"Vibes", links:["rainy anime","night anime","pink anime","dark anime","sunset anime","city anime"] }
+      ]},
+      { name:"Cars / Vehicles", icon:"🏎️", cols:[
+        { title:"Cars", links:["sport car","classic car","jdm","supercar","rally","drift"] },
+        { title:"Bikes", links:["motorcycle","cafe racer","sport bike","touring","retro bike","helmet"] },
+        { title:"Other", links:["aircraft","trains","ships","spacecraft","trucks","offroad"] }
+      ]},
+      { name:"Games", icon:"🎮", cols:[
+        { title:"Game Styles", links:["pixel art","low poly","fantasy","sci-fi","retro","minimal game"] },
+        { title:"Vibes", links:["neon arcade","dark dungeon","cozy game","space game","cyber game","anime game"] },
+        { title:"Themes", links:["controller","characters","maps","weapons","logos","scenes"] }
+      ]},
+      { name:"Animals", icon:"🐾", cols:[
+        { title:"Animals", links:["cats","dogs","birds","wolves","lions","tigers"] },
+        { title:"Nature Animals", links:["deer","fox","bear","owl","fish","horse"] },
+        { title:"Styles", links:["minimal animal","cute","realistic","silhouette","neon animal","sketch"] }
+      ]},
+      { name:"Seasonal", icon:"🎉", cols:[
+        { title:"Seasons", links:["winter","autumn","spring","summer","snow","rain"] },
+        { title:"Events", links:["new year","valentine","halloween","christmas","eid","birthday"] },
+        { title:"Mood", links:["cozy winter","summer vibe","rainy day","sunny","foggy","night"] }
+      ]}
+    ];
+
+    // ---------------- Wallpaper generator (copyright-safe) ----------------
+    // Canvas ile "wallpaper benzeri" özgün görseller üretir.
+    function mulberry32(a){ return function(){ let t = a += 0x6D2B79F5; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; } }
+
+    function hexToRgb(hex){
+      const m = hex.replace("#","").match(/.{1,2}/g).map(x=>parseInt(x,16));
+      return {r:m[0], g:m[1], b:m[2]};
+    }
+    function lerp(a,b,t){ return a + (b-a)*t; }
+    function mix(c1,c2,t){
+      const a=hexToRgb(c1), b=hexToRgb(c2);
+      return `rgb(${Math.round(lerp(a.r,b.r,t))},${Math.round(lerp(a.g,b.g,t))},${Math.round(lerp(a.b,b.b,t))})`;
+    }
+
+    function genWallpaperDataURL({seed, w, h, theme}){
+      const rnd = mulberry32(seed);
+      const c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      const ctx = c.getContext("2d");
+
+      const palettes = theme === "amoled" ? [
+        ["#000000","#1a1a2e","#3a0ca3"],
+        ["#000000","#0b1320","#ff006e"],
+        ["#000000","#111827","#00f5d4"]
+      ] : [
+        ["#7aa2ff","#ff7ac6","#0b0f17"],
+        ["#9be15d","#00e3ae","#0b0f17"],
+        ["#f6d365","#fda085","#0b0f17"]
+      ];
+      const pal = palettes[Math.floor(rnd()*palettes.length)];
+
+      // Gradient background
+      const g = ctx.createLinearGradient(0,0,w,h);
+      g.addColorStop(0, pal[0]);
+      g.addColorStop(0.6, pal[1]);
+      g.addColorStop(1, pal[2]);
+      ctx.fillStyle = g;
+      ctx.fillRect(0,0,w,h);
+
+      // Soft noise
+      ctx.globalAlpha = 0.10;
+      for(let i=0;i<1200;i++){
+        const x = rnd()*w, y = rnd()*h;
+        const r = rnd()*2.2;
+        ctx.fillStyle = `rgba(255,255,255,${rnd()*0.8})`;
+        ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      // Mountain layers (silhouette)
+      const layers = 3 + Math.floor(rnd()*2);
+      for(let L=0; L<layers; L++){
+        const baseY = h*(0.55 + L*0.12 + rnd()*0.05);
+        ctx.beginPath();
+        ctx.moveTo(0,h);
+        ctx.lineTo(0, baseY);
+        let x = 0;
+        while(x < w){
+          x += w*(0.08 + rnd()*0.12);
+          const y = baseY - h*(0.06 + rnd()*0.16)*(1 - L*0.2);
+          ctx.lineTo(x, y);
+        }
+        ctx.lineTo(w, baseY + h*0.05);
+        ctx.lineTo(w,h);
+        ctx.closePath();
+        const shade = theme==="amoled" ? `rgba(0,0,0,${0.55 - L*0.10})` : `rgba(0,0,0,${0.25 + L*0.10})`;
+        ctx.fillStyle = shade;
+        ctx.fill();
+      }
+
+      // Small detail: “sun/moon”
+      const cx = w*(0.2 + rnd()*0.6), cy = h*(0.15 + rnd()*0.25);
+      ctx.beginPath();
+      ctx.arc(cx, cy, Math.min(w,h)*(0.06 + rnd()*0.04), 0, Math.PI*2);
+      ctx.fillStyle = theme==="amoled" ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.65)";
+      ctx.fill();
+
+      // Tiny signature pattern (unique “detail”)
+      ctx.globalAlpha = 0.18;
+      ctx.strokeStyle = theme==="amoled" ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.25)";
+      ctx.lineWidth = 1;
+      for(let i=0;i<10;i++){
+        ctx.beginPath();
+        const y = h*(0.78 + i*0.015);
+        ctx.moveTo(w*0.05 + rnd()*w*0.1, y);
+        ctx.bezierCurveTo(w*0.35, y-8, w*0.65, y+8, w*0.95, y);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+
+      return c.toDataURL("image/png");
+    }
+
+    // ---------------- Demo wallpapers (categorized) ----------------
+    const TAGS = [
+      "amoled","minimal","nature","mountains","forest","lake","space","nebula","city","neon",
+      "abstract","gradient","pink","blue","calm","cyberpunk","anime","cars","retro","cozy"
+    ];
+
+    function pick(arr, rnd){ return arr[Math.floor(rnd()*arr.length)] }
+
+    function makeItems(){
+      const items = [];
+      for(let i=1;i<=48;i++){
+        const rnd = mulberry32(1000+i);
+        const device = (i%3===0) ? "Phone" : (i%3===1 ? "PC" : "Tablet");
+        const isPhone = device==="Phone";
+        const w = isPhone ? 720 : 960;
+        const h = isPhone ? 1280 : 540;
+
+        const theme = (i%4===0) ? "amoled" : "normal";
+        const tag1 = pick(TAGS, rnd);
+        const tag2 = pick(TAGS, rnd);
+        const tag3 = pick(TAGS, rnd);
+
+        const category =
+          (tag1==="nature" || tag2==="mountains" || tag3==="forest") ? "Nature" :
+          (tag1==="space" || tag2==="nebula") ? "Space" :
+          (tag1==="city" || tag2==="neon" || tag3==="cyberpunk") ? "City / Architecture" :
+          (tag1==="abstract" || tag2==="gradient") ? "Abstract" :
+          (tag1==="anime") ? "Anime" :
+          (tag1==="cars") ? "Cars / Vehicles" :
+          (theme==="amoled") ? "AMOLED / Black" :
+          "Aesthetic";
+
+        const title = `${category} • ${tag1}`;
+        const res = isPhone ? "1440×3200" : (device==="PC" ? "3840×2160" : "2048×2732");
+
+        const img = genWallpaperDataURL({
+          seed: 5000+i,
+          w, h,
+          theme: theme==="amoled" ? "amoled" : "normal"
+        });
+
+        items.push({
+          id:i,
+          title,
+          category,
+          tags: Array.from(new Set([tag1,tag2,tag3, device.toLowerCase()])),
+          device,
+          res,
+          img
+        });
+      }
+      return items;
+    }
+
+    const demo = makeItems();
+
+    // ---------------- Render Mega Menu (left) ----------------
+    const catlist = document.getElementById("catlist");
+    const mega = document.getElementById("mega");
+    const megaTitle = document.getElementById("megaTitle");
+    const megagrid = document.getElementById("megagrid");
+
+    let activeMainCat = CATEGORIES[0].name;
+
+    function renderCatList(){
+      catlist.innerHTML = "";
+      CATEGORIES.forEach((c, idx) => {
+        const row = document.createElement("div");
+        row.className = "catitem" + (c.name===activeMainCat ? " active" : "");
+        row.innerHTML = `<span>${c.icon} ${c.name}</span><small>›</small>`;
+
+        // Hover => show mega
+        row.addEventListener("mouseenter", () => {
+          activeMainCat = c.name;
+          [...catlist.querySelectorAll(".catitem")].forEach(x=>x.classList.remove("active"));
+          row.classList.add("active");
+          showMega(c);
+        });
+
+        // Mobile click
+        row.addEventListener("click", () => {
+          activeMainCat = c.name;
+          [...catlist.querySelectorAll(".catitem")].forEach(x=>x.classList.remove("active"));
+          row.classList.add("active");
+          showMega(c);
+          mega.classList.add("show");
+        });
+
+        catlist.appendChild(row);
+      });
+      showMega(CATEGORIES[0]);
+    }
+
+    function showMega(cat){
+      mega.classList.add("show");
+      megaTitle.textContent = cat.name;
+      megagrid.innerHTML = "";
+      cat.cols.forEach(col => {
+        const box = document.createElement("div");
+        box.className = "megocol";
+        box.innerHTML = `<b>${col.title}</b>`;
+        const links = document.createElement("div");
+        links.className = "megalinks";
+        col.links.forEach(txt => {
+          const a = document.createElement("a");
+          a.href = "#";
+          a.textContent = txt;
+          a.addEventListener("click", (e) => {
+            e.preventDefault();
+            activeTag = txt.toLowerCase().split(" ")[0]; // basit filtre
+            applyFilter();
+          });
+          links.appendChild(a);
+        });
+        box.appendChild(links);
+        megagrid.appendChild(box);
+      });
+    }
+
+    renderCatList();
+
+    // ---------------- Chips (top filter) ----------------
+    const chips = document.getElementById("chips");
+    const chipSet = [
+      "amoled","minimal","nature","space","city","neon","abstract","gradient","pink","blue","anime","cars","calm","cozy"
+    ];
+    let activeTag = "";
+
+    function renderChips(){
+      chips.innerHTML = "";
+      chipSet.forEach(t => {
+        const el = document.createElement("span");
+        el.className = "chip" + (activeTag===t ? " active":"");
+        el.textContent = `#${t}`;
+        el.addEventListener("click", () => {
+          activeTag = (activeTag===t) ? "" : t;
+          renderChips();
+          applyFilter();
+        });
+        chips.appendChild(el);
+      });
+    }
+    renderChips();
+
+    // ---------------- Grid render + ads ----------------
+    const grid = document.getElementById("grid");
+    const q = document.getElementById("q");
+    const AD_EVERY = 12;
+
+    function makeCard(item){
+      const el = document.createElement("a");
+      el.className = "card";
+      el.href = "#"; // sonra: /w/{slug}
+      el.innerHTML = `
+        <div class="thumb">
+          <span class="badge">${item.device} • ${item.res}</span>
+          <img src="${item.img}" alt="${item.title}">
+        </div>
+        <div class="meta">
+          <div class="title">${item.title}</div>
+          <div class="sub">
+            <span>${item.category}</span>
+            <span>${item.tags.slice(0,2).map(x=>"#"+x).join(" ")}</span>
+          </div>
+        </div>
+      `;
+      return el;
+    }
+
+    function makeAdCard(){
+      const el = document.createElement("div");
+      el.className = "card ad";
+      el.innerHTML = `
+        <div class="thumb">
+          <div>
+            <div style="font-weight:900; font-size:14px; margin-bottom:6px;">Sponsored</div>
+            <div style="font-size:12px; opacity:.9">Bu alan native reklam slotu.</div>
+            <div style="font-size:12px; opacity:.9">Scroll arasında “normal kart” gibi görünür.</div>
+          </div>
+        </div>
+        <div class="meta">
+          <div class="title">Reklam</div>
+          <div class="sub"><span>Ad Slot</span><span>non-blocking</span></div>
+        </div>
+      `;
+      return el;
+    }
+
+    function render(list){
+      grid.innerHTML = "";
+      list.forEach((item, idx) => {
+        grid.appendChild(makeCard(item));
+        if ((idx+1) % AD_EVERY === 0) grid.appendChild(makeAdCard());
+      });
+    }
+
+    function applyFilter(){
+      const query = (q.value || "").trim().toLowerCase();
+      const filtered = demo.filter(x => {
+        const matchesTag = !activeTag || x.tags.includes(activeTag) || x.category.toLowerCase().includes(activeTag);
+        const matchesQuery = !query || x.title.toLowerCase().includes(query) || x.tags.join(" ").includes(query) || x.category.toLowerCase().includes(query);
+        return matchesTag && matchesQuery;
+      });
+      render(filtered);
+    }
+
+    q.addEventListener("input", applyFilter);
+    applyFilter();
+
+    // Mega menu: mouseleave on mobile/desktop to hide
+    const catbox = document.getElementById("catbox");
+    catbox.addEventListener("mouseleave", () => {
+      if (window.innerWidth > 980) mega.classList.remove("show");
+    });
+  </script>
+</body>
+</html>
